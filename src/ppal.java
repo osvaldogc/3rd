@@ -1,7 +1,7 @@
 
 /**
- * @author ograna
- * @date Dec 1, 2016
+ * @author Osvaldo Gra&ntilde;a
+ * @date Dec 7, 2016
  *
  */
 
@@ -12,6 +12,9 @@ public class ppal {
 
 	/**
 	 * 
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Dec 7, 2016
+	 *
 	 */
 	public ppal() {
 		// TODO Auto-generated constructor stub
@@ -19,8 +22,8 @@ public class ppal {
 
 	/**
 	 *
-	 * @author ograna
-	 * @date Dec 1, 2016
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Dec 7, 2016
 	 *
 	 * @param args
 	 */
@@ -33,12 +36,14 @@ public class ppal {
 			tabla.getListOfSamples();
 			
 			
-			//System.out.println("\n\n\n");
+			
 			
 			for(String type:tabla.getListOfSampleTypes()){
 				//System.out.println(type);
 			
 			}
+			
+			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

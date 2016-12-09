@@ -6,6 +6,7 @@
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import g4a.CCLE;
 public class ppal {
@@ -33,17 +34,15 @@ public class ppal {
 		
 		try {
 			
-			tabla.getListOfSamples();
-			
-			
-			
-			
-			for(String type:tabla.getListOfSampleTypes()){
+			ArrayList <String> listOfSamples=tabla.getListOfSamples();			
+/*			for(String type:tabla.getListOfSampleTypes()){
 				//System.out.println(type);
 			
-			}
+			}*/
 			
 			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
+			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/3rd/classes.cls");			
+			tabla.createClassFile(listOfSamples);
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

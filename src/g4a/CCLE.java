@@ -21,11 +21,13 @@ import java.util.ArrayList;
 public class CCLE {
 	
 	private String CCLEgct;
+	private String [][] resortedCCLEgct;
 	private String firstSampleType;
 	private String geneSetFile;
 	private String classesFileName;
 	private ArrayList <String> resortedSampleTypes;
-
+	private int nRowsCCLEgct,nColsCCLEgct;
+	
 		
 	/**
 	 * 
@@ -43,6 +45,10 @@ public class CCLE {
 		this.geneSetFile=null;
 		this.classesFileName=null;
 		this.resortedSampleTypes=null;
+		this.resortedCCLEgct=null;
+		this.nRowsCCLEgct=0;
+		this.nColsCCLEgct=0;
+		
 	}
 
 	/** 
@@ -97,11 +103,13 @@ public class CCLE {
 		ArrayList <String> samples=new ArrayList<String>();
 		
 		LineNumberReader lnr = new LineNumberReader(new FileReader(this.CCLEgct));
+		String columnsToConsiderWhenCreatingTheMatrix="";
 		
 		//locates the third line (with sample headers)
 		for(String line=null; (line=lnr.readLine())!=null;){
 			if(lnr.getLineNumber()==3){
 				String [] sampleList=line.split("\\t");
+				
 				String alreadyIncluded="";
 				
 				//avoids name (position 0) and description (position 1) fields
@@ -114,14 +122,50 @@ public class CCLE {
 						alreadyIncluded+="="+currentSample+"=";
 						samples.add(currentSample);
 						
-						//System.out.println(currentSample);
+						columnsToConsiderWhenCreatingTheMatrix+="-"+i+"-";						
 					}
-				}
-				
-				break;
+				}				
 			}
 		}
 		
+		this.nRowsCCLEgct=lnr.getLineNumber();
+		this.nColsCCLEgct=samples.size()+2; // (+2 -> name+description)
+		
+		
+		//reads again the CCLEgct completely to create the matrix derived from the gct file, but it excludes all repeated samples
+		this.resortedCCLEgct=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
+		for(int row=0;row<this.nRowsCCLEgct;row++)
+				for(int column=0;column<this.nColsCCLEgct;column++)
+						this.resortedCCLEgct[row][column]="";
+		
+		
+		lnr = new LineNumberReader(new FileReader(this.CCLEgct));		
+		for(String line=null; (line=lnr.readLine())!=null;){			
+			String [] fullLine=line.split("\\t");			
+			
+			if(lnr.getLineNumber()==1){//adds the first line
+				this.resortedCCLEgct[0][0]=fullLine[0];
+			}else if(lnr.getLineNumber()==2){//adds the second line
+				this.resortedCCLEgct[1][0]=fullLine[0];
+				this.resortedCCLEgct[1][1]=fullLine[1];
+			}else{//for the rest of the lines
+				
+				//DEBE AÑADIR LAS MUESTRAS EXCLUYENDO LAS REPETIDAS, es decir:
+				//DEBE INCLUIR sÓLO LAS COLUMNAS INDICADAS EN columnsToConsiderWhenCreatingTheMatrix
+				
+				//for the rest of the lines
+				for(int i=0;i<fullLine.length;i++){
+
+					
+				}
+				
+			}
+			
+			
+		}
+		
+		
+
 		return(samples);
 	}
 	
@@ -261,43 +305,85 @@ public class CCLE {
 	 * Creates the required class file (cls)
 	 *
 	 * @author Osvaldo Gra&ntilde;a
-	 * @date Dec 7, 2016
+	 * @date Dec 9, 2016
 	 *
+	 * @param listOfSamples
 	 */
-	public void createClassFile(){
+	public void createClassFile(ArrayList <String> listOfSamples){
 		if(this.resortedSampleTypes!=null){
 		
+			BufferedWriter writer=null;
+			
 			try {
-				String firstLine=this.getNumberOfSamples()+" "+this.getNumberOfSampleTypes()+" 1";
+				String firstLine=listOfSamples.size()+" "+this.getNumberOfSampleTypes()+" 1";
 				String secondLine=new String("#");
 				String thirdLine=new String("");
 				
+						
 				//for each sample type
-				for(String sampleType:this.getListOfSampleTypes()){
+				for(String sampleType:this.resortedSampleTypes){
 					secondLine+=" "+sampleType;
 					
 					//for each sample of each sample type
-					for(String sample:this.getListOfSamples()){
+					for(String sample:listOfSamples){
 						if(sample.matches("(.*)"+sampleType+"$")){
 							thirdLine+=sampleType+" ";
 						}
 					}
-				}
+				}				
+			
+				//saves it in a class file (cls)
+				writer=new BufferedWriter(new FileWriter(this.getClassesFileName()));
+				writer.write(firstLine);
+				writer.newLine();
+				writer.write(secondLine);
+				writer.newLine();
+				writer.write(thirdLine);
 				
-				
-				//BufferedWritter writer=new BufferedWriter(new FileWriter(this.getClassesFileName()));
-				
-				
+					
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}	
+			}finally{
+				try {
+	                // Close the writer regardless of what happens...
+	                writer.close();
+	            } catch (Exception e) {
+	            }			
+			}
 
 			
 		}else{
-			System.err.println("The sample type that should go in first place has not been set");
+			System.err.println("createClassFile: The sample type that should go in first place has not been set");
 			System.exit(1);			
 		}
+		
+	}
+	
+	/**
+	 * Creates a new GCT file derived from the original GCT (CCLE).
+	 * This GCT contains first the samples that belong to the sample type chosen to be in first place.
+	 * By the way, it excludes lines where there is no gene information in the description column.
+	 *
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Dec 9, 2016
+	 *
+	 * @param listOfSamples
+	 */
+	public void createResortedGCTfile(ArrayList <String> listOfSamples){	
+		
+		if(this.resortedSampleTypes!=null){
+			
+			//this.resortedCCLEgct=new String[this.nColsCCLEgct][this.nRowsCCLEgct];
+				
+		
+			
+
+			
+		}else{
+			System.err.println("createResortedGCTfile: The sample type that should go in first place has not been set");
+			System.exit(1);			
+		}		
 		
 	}
 	

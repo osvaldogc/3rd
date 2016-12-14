@@ -118,6 +118,7 @@ public class CCLE {
 					
 					// controls sample repetitions, like NCIH292_LUNG
 					// in this case, it simply considers data from the first occurrence of that sample
+					// so, if the sample was still not included, it is added here
 					if(-1==alreadyIncluded.indexOf("="+currentSample+"=")){
 						alreadyIncluded+="="+currentSample+"=";
 						samples.add(currentSample);
@@ -132,7 +133,7 @@ public class CCLE {
 		this.nColsCCLEgct=samples.size()+2; // (+2 -> name+description)
 		
 		
-		//reads again the CCLEgct completely to create the matrix derived from the gct file, but it excludes all repeated samples
+		//reads again the CCLEgct file completely to create the matrix derived from the gct file, but excluding all repeated samples
 		this.resortedCCLEgct=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
 		for(int row=0;row<this.nRowsCCLEgct;row++)
 				for(int column=0;column<this.nColsCCLEgct;column++)
@@ -141,11 +142,12 @@ public class CCLE {
 		
 		lnr = new LineNumberReader(new FileReader(this.CCLEgct));		
 		for(String line=null; (line=lnr.readLine())!=null;){			
+			//splits the current line
 			String [] fullLine=line.split("\\t");			
 			
-			if(lnr.getLineNumber()==1){//adds the first line
+			if(lnr.getLineNumber()==1){//adds the first line (with only one column)
 				this.resortedCCLEgct[0][0]=fullLine[0];
-			}else if(lnr.getLineNumber()==2){//adds the second line
+			}else if(lnr.getLineNumber()==2){//adds the second line (with two columns)
 				this.resortedCCLEgct[1][0]=fullLine[0];
 				this.resortedCCLEgct[1][1]=fullLine[1];
 			}else{//for the rest of the lines
@@ -153,18 +155,22 @@ public class CCLE {
 				//DEBE AÑADIR LAS MUESTRAS EXCLUYENDO LAS REPETIDAS, es decir:
 				//DEBE INCLUIR sÓLO LAS COLUMNAS INDICADAS EN columnsToConsiderWhenCreatingTheMatrix
 				
-				//for the rest of the lines
+				
 				for(int i=0;i<fullLine.length;i++){
-
-					
+					if(columnsToConsiderWhenCreatingTheMatrix.contains("="+i+"=")){
+						//At this point lnr.getLineNumber() returns one more position (one more line),
+						//because the current one has already been read -> line=lnr.readLine()
+						//so we must subtract 1
+						this.resortedCCLEgct[lnr.getLineNumber()-1][i]=fullLine[i];
+					}
+						
 				}
 				
-			}
-			
-			
+			}			
 		}
 		
-		
+		for(int row=0;row<this.nRowsCCLEgct;row++)
+			System.out.println(this.resortedCCLEgct[row][0]);
 
 		return(samples);
 	}

@@ -40,9 +40,9 @@ public class ppal {
 			
 			}*/
 			
-			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
+/*			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
 			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/3rd/classes.cls");			
-			tabla.createClassFile(listOfSamples);
+			tabla.createClassFile(listOfSamples);*/
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

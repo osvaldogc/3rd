@@ -160,7 +160,7 @@ public class CCLE {
 				this.resortedCCLEgct[0][0]=fullLine[0];
 				currentRow++;
 			}else if(lnr.getLineNumber()==2){//adds the second line (with two columns)
-				this.resortedCCLEgct[1][0]=fullLine[0];
+				this.resortedCCLEgct[1][0]=(new Integer(this.nRowsCCLEgct-3)).toString();
 				this.resortedCCLEgct[1][1]=(new Integer(samples.size())).toString();
 				currentRow++;
 			}else{//for the rest of the lines

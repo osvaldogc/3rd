@@ -103,18 +103,24 @@ public class CCLE {
 		ArrayList <String> samples=new ArrayList<String>();
 		
 		LineNumberReader lnr = new LineNumberReader(new FileReader(this.CCLEgct));
-		String columnsToConsiderWhenCreatingTheMatrix="";
+		//Forces the inclusion of columns 0 and 1 always, as they contain
+		//the Name and Description columns
+		String columnsToConsiderWhenCreatingTheMatrix="=0==1="; //adds columns
+		//counts the two first lines already (gct headers)
+		this.nRowsCCLEgct=2;
 		
 		//locates the third line (with sample headers)
 		for(String line=null; (line=lnr.readLine())!=null;){
-			if(lnr.getLineNumber()==3){
-				String [] sampleList=line.split("\\t");
+			
+			String [] tokens=line.split("\\t");
+			
+			if(lnr.getLineNumber()==3){		
 				
 				String alreadyIncluded="";
 				
-				//avoids name (position 0) and description (position 1) fields
-				for(int i=2;i<sampleList.length;i++){
-					String currentSample=sampleList[i];
+				//avoids 'name' (position 0) and 'description' (position 1) fields
+				for(int i=2;i<tokens.length;i++){
+					String currentSample=tokens[i];
 					
 					// controls sample repetitions, like NCIH292_LUNG
 					// in this case, it simply considers data from the first occurrence of that sample
@@ -123,15 +129,19 @@ public class CCLE {
 						alreadyIncluded+="="+currentSample+"=";
 						samples.add(currentSample);
 						
-						columnsToConsiderWhenCreatingTheMatrix+="-"+i+"-";						
+						columnsToConsiderWhenCreatingTheMatrix+="="+i+"=";
+						
+						//System.out.println(currentSample);
 					}
 				}				
 			}
+			
+			//it does not check the two first lines (they are already counted)
+			//it does not consider/count lines where there is no gene name in the 'Description' field
+			if(lnr.getLineNumber()>=3 && !tokens[1].equals("")) this.nRowsCCLEgct++;
 		}
 		
-		this.nRowsCCLEgct=lnr.getLineNumber();
-		this.nColsCCLEgct=samples.size()+2; // (+2 -> name+description)
-		
+		this.nColsCCLEgct=samples.size()+2; // (+2 -> name+description)		
 		
 		//reads again the CCLEgct file completely to create the matrix derived from the gct file, but excluding all repeated samples
 		this.resortedCCLEgct=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
@@ -140,38 +150,47 @@ public class CCLE {
 						this.resortedCCLEgct[row][column]="";
 		
 		
-		lnr = new LineNumberReader(new FileReader(this.CCLEgct));		
+		lnr = new LineNumberReader(new FileReader(this.CCLEgct));
+		int currentRow=0;
 		for(String line=null; (line=lnr.readLine())!=null;){			
 			//splits the current line
 			String [] fullLine=line.split("\\t");			
-			
+		
 			if(lnr.getLineNumber()==1){//adds the first line (with only one column)
 				this.resortedCCLEgct[0][0]=fullLine[0];
+				currentRow++;
 			}else if(lnr.getLineNumber()==2){//adds the second line (with two columns)
 				this.resortedCCLEgct[1][0]=fullLine[0];
-				this.resortedCCLEgct[1][1]=fullLine[1];
+				this.resortedCCLEgct[1][1]=(new Integer(samples.size())).toString();
+				currentRow++;
 			}else{//for the rest of the lines
 				
-				//DEBE AÑADIR LAS MUESTRAS EXCLUYENDO LAS REPETIDAS, es decir:
-				//DEBE INCLUIR sÓLO LAS COLUMNAS INDICADAS EN columnsToConsiderWhenCreatingTheMatrix
-				
-				
-				for(int i=0;i<fullLine.length;i++){
-					if(columnsToConsiderWhenCreatingTheMatrix.contains("="+i+"=")){
-						//At this point lnr.getLineNumber() returns one more position (one more line),
-						//because the current one has already been read -> line=lnr.readLine()
-						//so we must subtract 1
-						this.resortedCCLEgct[lnr.getLineNumber()-1][i]=fullLine[i];
+				//in case that there is gene information (in the 'Description' column )
+				if(!fullLine[1].equals("")){
+					
+					//requires a specific counter because there might be less columns than in the original matrix,
+					//due to sample repetitions (like NCIH292_LUNG) that are excluded in the resortedCCLEgct
+					int currentColumn=0;
+					
+					
+					for(int i=0;i<fullLine.length;i++){
+						if(columnsToConsiderWhenCreatingTheMatrix.contains("="+i+"=")){						
+							this.resortedCCLEgct[currentRow][currentColumn]=fullLine[i];
+							currentColumn++;
+						}											
 					}
-						
+					
+					currentRow++;
 				}
-				
 			}			
 		}
 		
-		for(int row=0;row<this.nRowsCCLEgct;row++)
-			System.out.println(this.resortedCCLEgct[row][0]);
-
+		for(int row=0;row<this.nRowsCCLEgct;row++){
+			for(int column=0; column<this.nColsCCLEgct; column++)
+				System.out.print(this.resortedCCLEgct[row][column]+"\t");
+			System.out.println();
+		}
+		
 		return(samples);
 	}
 	

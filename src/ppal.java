@@ -35,14 +35,16 @@ public class ppal {
 		try {
 			
 			ArrayList <String> listOfSamples=tabla.getListOfSamples();			
-/*			for(String type:tabla.getListOfSampleTypes()){
-				//System.out.println(type);
+			/*for(String type:listOfSamples){
+				System.out.println(type);
 			
 			}*/
 			
-/*			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
-			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/3rd/classes.cls");			
-			tabla.createClassFile(listOfSamples);*/
+			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
+			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/classes.cls");			
+			tabla.createClassFile(listOfSamples);
+			tabla.createResortedGCTfile(listOfSamples);
+			tabla.set_gmtORgmxFileWithGenesetToPlot("/home/ograna/Projects/GSEA_pathways_definitions/h.all.v5.2.symbols.gmt");
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

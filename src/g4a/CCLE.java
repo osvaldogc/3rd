@@ -21,7 +21,8 @@ import java.util.ArrayList;
 public class CCLE {
 	
 	private String CCLEgct;
-	private String [][] resortedCCLEgct;
+	private String [][] CCLEgctMatrix;
+	private String [][] resortedCCLEgctMatrix;
 	private String firstSampleType;
 	private String geneSetFile;
 	private String classesFileName;
@@ -45,7 +46,8 @@ public class CCLE {
 		this.geneSetFile=null;
 		this.classesFileName=null;
 		this.resortedSampleTypes=null;
-		this.resortedCCLEgct=null;
+		this.CCLEgctMatrix=null;
+		this.resortedCCLEgctMatrix=null;
 		this.nRowsCCLEgct=0;
 		this.nColsCCLEgct=0;
 		
@@ -83,19 +85,8 @@ public class CCLE {
 	 * @author Osvaldo Gra&ntilde;a
 	 * @date Dec 7, 2016
 	 *
-	 * @param CCLEgct name of the original CCLEgct file
-	 */
-	public void setCCLEgct(String CCLEgct) {
-		this.CCLEgct = CCLEgct;
-	}
-	
-	/**
-	 * 
-	 *
-	 * @author Osvaldo Gra&ntilde;a
-	 * @date Dec 7, 2016
-	 *
-	 * @return A list with all the sample names<br>Important: If one sample appears more than once, it simply considers data from the first occurrence of that sample
+	 * @return A list with all the sample names. <br>Important: If one sample appears more than once, it simply considers data from the first occurrence in the CCLE file of that sample.<br>Additionally, it creates a new matrix object, in gct format, with the original CCLE table but excluding columns with repeated
+	 * samples, and also excluding lines where there is no gene name in the description field.
 	 * @throws IOException
 	 */
 	public ArrayList <String> getListOfSamples() throws IOException{
@@ -143,11 +134,12 @@ public class CCLE {
 		
 		this.nColsCCLEgct=samples.size()+2; // (+2 -> name+description)		
 		
-		//reads again the CCLEgct file completely to create the matrix derived from the gct file, but excluding all repeated samples
-		this.resortedCCLEgct=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
+		//reads again the CCLEgct file completely to create the matrix derived from the gct file,
+		// excluding columns with repeated samples and lines with no gene name in the description field
+		this.CCLEgctMatrix=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
 		for(int row=0;row<this.nRowsCCLEgct;row++)
 				for(int column=0;column<this.nColsCCLEgct;column++)
-						this.resortedCCLEgct[row][column]="";
+						this.CCLEgctMatrix[row][column]="";
 		
 		
 		lnr = new LineNumberReader(new FileReader(this.CCLEgct));
@@ -157,11 +149,11 @@ public class CCLE {
 			String [] fullLine=line.split("\\t");			
 		
 			if(lnr.getLineNumber()==1){//adds the first line (with only one column)
-				this.resortedCCLEgct[0][0]=fullLine[0];
+				this.CCLEgctMatrix[0][0]=fullLine[0];
 				currentRow++;
 			}else if(lnr.getLineNumber()==2){//adds the second line (with two columns)
-				this.resortedCCLEgct[1][0]=(new Integer(this.nRowsCCLEgct-3)).toString();
-				this.resortedCCLEgct[1][1]=(new Integer(samples.size())).toString();
+				this.CCLEgctMatrix[1][0]=(new Integer(this.nRowsCCLEgct-3)).toString();
+				this.CCLEgctMatrix[1][1]=(new Integer(samples.size())).toString();
 				currentRow++;
 			}else{//for the rest of the lines
 				
@@ -175,7 +167,7 @@ public class CCLE {
 					
 					for(int i=0;i<fullLine.length;i++){
 						if(columnsToConsiderWhenCreatingTheMatrix.contains("="+i+"=")){						
-							this.resortedCCLEgct[currentRow][currentColumn]=fullLine[i];
+							this.CCLEgctMatrix[currentRow][currentColumn]=fullLine[i];
 							currentColumn++;
 						}											
 					}
@@ -185,11 +177,11 @@ public class CCLE {
 			}			
 		}
 		
-		for(int row=0;row<this.nRowsCCLEgct;row++){
+		/*for(int row=0;row<this.nRowsCCLEgct;row++){
 			for(int column=0; column<this.nColsCCLEgct; column++)
-				System.out.print(this.resortedCCLEgct[row][column]+"\t");
+				System.out.print(this.CCLEgctMatrix[row][column]+"\t");
 			System.out.println();
-		}
+		}*/
 		
 		return(samples);
 	}
@@ -388,7 +380,6 @@ public class CCLE {
 	/**
 	 * Creates a new GCT file derived from the original GCT (CCLE).
 	 * This GCT contains first the samples that belong to the sample type chosen to be in first place.
-	 * By the way, it excludes lines where there is no gene information in the description column.
 	 *
 	 * @author Osvaldo Gra&ntilde;a
 	 * @date Dec 9, 2016
@@ -398,17 +389,80 @@ public class CCLE {
 	public void createResortedGCTfile(ArrayList <String> listOfSamples){	
 		
 		if(this.resortedSampleTypes!=null){
+			this.resortedCCLEgctMatrix=new String[this.nRowsCCLEgct][this.nColsCCLEgct];
+			//initialization
+			for(int row=0;row<this.nRowsCCLEgct;row++)
+					for(int column=0;column<this.nColsCCLEgct;column++)
+							this.resortedCCLEgctMatrix[row][column]="";
 			
-			//this.resortedCCLEgct=new String[this.nColsCCLEgct][this.nRowsCCLEgct];
+			//first copies the common columns: columns 1 and 2
+			for(int row=0;row<this.nRowsCCLEgct;row++){
+				this.resortedCCLEgctMatrix[row][0]=this.CCLEgctMatrix[row][0];
+				this.resortedCCLEgctMatrix[row][1]=this.CCLEgctMatrix[row][1];
+			}
+			
+			//now resorts the samples and copies them in the proper order to resortedCCLEgctMatrix
+			int columnCounterforResortedMatrix=2;
+			//foreach sample type
+			for(String type:this.resortedSampleTypes){
 				
-		
+				//goes through all columns, starting in the third column
+				for(int column=2;column<this.CCLEgctMatrix[2].length;column++){
+					String thisSampleType=(this.CCLEgctMatrix[2][column].split("_",2))[1];					
+					
+					//if 'thisSampleType' is the same as the one pointed out by 'type', then this column is added
+					//in the resorted matrix
+					if(thisSampleType.equals(type)){
+						//adds all rows of that column
+						for(int row=2; row<this.CCLEgctMatrix.length; row++)
+							this.resortedCCLEgctMatrix[row][columnCounterforResortedMatrix]=this.CCLEgctMatrix[row][column];						
+						
+						//increases one column in resortedCCLEgctMatrix
+						columnCounterforResortedMatrix++;					
+					}
+					
+				}				
+			}
 			
-
+			
+			for(int row=0;row<this.nRowsCCLEgct;row++){
+				for(int column=0; column<this.nColsCCLEgct; column++)
+					System.out.print(this.resortedCCLEgctMatrix[row][column]+"\t");
+				System.out.println();
+			}
 			
 		}else{
 			System.err.println("createResortedGCTfile: The sample type that should go in first place has not been set");
 			System.exit(1);			
 		}		
+		
+	}
+	
+	/*
+	 * Executes GSEA on the CCLE gct file (resortedCCLEgctMatrix) using the specified gene set file.
+	 * 
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Jan 16, 2017	 * 
+	 * 
+	 */
+	private void executeGSEA(){
+		System.out.println("[executing GSEA]");
+		
+//		String command="java -cp .:/home/ograna/SOFTWARE/GSEA/gsea2-2.2.2.jar -Xmx4G xtools.gsea.Gsea"+" -res "+
+//		my $GSEA="java -cp .:/home/ograna/SOFTWARE/GSEA/gsea2-2.2.2.jar -Xmx4G xtools.gsea.Gsea";
+//		$GSEA.=" -res ".$collapsed_OUTPUT_CCLE;
+//		$GSEA.=" -cls ".$CLSfile."#".$firstSample."_versus_REST";
+//		$GSEA.=" -gmx ".$GMX;
+//		$GSEA.=" -collapse false -mode Max_probe -norm meandiv -nperm 1000 -permute phenotype -rnd_type no_balance -scoring_scheme weighted";
+//		$GSEA.=" -rpt_label ".$GSEAouptutLabel;
+//		$GSEA.=" -metric Signal2Noise -sort real -order descending -chip gseaftp.broadinstitute.org://pub/gsea/annotations/AFFYMETRIX.chip -include_only_symbols true -make_sets true -median false -num 100 -plot_top_x 20 -rnd_seed 123 -save_rnd_lists false -set_max 1000 -set_min 5 -zip_report false";
+//		$GSEA.=" -out ./";
+//		$GSEA.=" -gui false";
+//		print $GSEA."\n";
+//		system($GSEA);
+//
+
+		
 		
 	}
 	

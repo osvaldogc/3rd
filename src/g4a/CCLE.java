@@ -23,11 +23,13 @@ public class CCLE {
 	private String CCLEgct;
 	private String [][] CCLEgctMatrix;
 	private String [][] resortedCCLEgctMatrix;
+	private String resortedCCLEgctMatrix_outputFileName="";
 	private String firstSampleType;
 	private String geneSetFile;
 	private String classesFileName;
 	private ArrayList <String> resortedSampleTypes;
 	private int nRowsCCLEgct,nColsCCLEgct;
+	private String GSEAouptutLabel;
 	
 		
 	/**
@@ -50,6 +52,10 @@ public class CCLE {
 		this.resortedCCLEgctMatrix=null;
 		this.nRowsCCLEgct=0;
 		this.nColsCCLEgct=0;
+		this.resortedCCLEgctMatrix_outputFileName=null;
+		this.GSEAouptutLabel="CCLE_GSEA";
+
+		
 		
 	}
 
@@ -373,8 +379,31 @@ public class CCLE {
 		}else{
 			System.err.println("createClassFile: The sample type that should go in first place has not been set");
 			System.exit(1);			
-		}
-		
+		}		
+	}
+	
+	/**
+	 * Sets the name (path+name) of the output file that contains the resortedCCLEgctMatrix
+	 *
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Jan 23, 2017
+	 *
+	 * @param name
+	 */
+	public void set_resortedCCLEgctMatrix_outputFileName(String name){
+		this.resortedCCLEgctMatrix_outputFileName=name;
+	}
+	
+	/**
+	 * Gets the name (path+name) of the output file that contains the resortedCCLEgctMatrix
+	 *
+	 * @author Osvaldo Gra&ntilde;a
+	 * @date Jan 23, 2017
+	 *
+	 * @return
+	 */
+	public String get_resortedCCLEgctMatrix_outputFileName(){
+		return this.resortedCCLEgctMatrix_outputFileName;
 	}
 	
 	/**
@@ -395,7 +424,7 @@ public class CCLE {
 					for(int column=0;column<this.nColsCCLEgct;column++)
 							this.resortedCCLEgctMatrix[row][column]="";
 			
-			//first copies the common columns: columns 1 and 2
+			//first copies the common columns: columns 1 and 2 from the start to the end of the file
 			for(int row=0;row<this.nRowsCCLEgct;row++){
 				this.resortedCCLEgctMatrix[row][0]=this.CCLEgctMatrix[row][0];
 				this.resortedCCLEgctMatrix[row][1]=this.CCLEgctMatrix[row][1];
@@ -423,13 +452,35 @@ public class CCLE {
 					
 				}				
 			}
+						
+			//writes the resortedCCLEgctMatrix to a file for GSEA
+			BufferedWriter writer=null;			
 			
+			try {
+				writer=new BufferedWriter(new FileWriter(this.get_resortedCCLEgctMatrix_outputFileName()));
+				
+				//writes all the lines to a file
+				for(int row=0;row<this.nRowsCCLEgct;row++){
+					for(int column=0; column<this.nColsCCLEgct; column++)
+						writer.write(this.resortedCCLEgctMatrix[row][column]+"\t");
+					writer.newLine();
+				}			
 			
-			for(int row=0;row<this.nRowsCCLEgct;row++){
-				for(int column=0; column<this.nColsCCLEgct; column++)
-					System.out.print(this.resortedCCLEgctMatrix[row][column]+"\t");
-				System.out.println();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				//System.err.println(e.getMessage());
+			} catch (java.lang.NullPointerException e){
+				System.err.println("ResortedCCLEgctMatrix output file name = null");
+				e.printStackTrace();
+			} finally{
+				try {
+	                // Close the writer regardless of what happens...
+	                writer.close();
+	            } catch (Exception e) {
+	            }			
 			}
+			
 			
 		}else{
 			System.err.println("createResortedGCTfile: The sample type that should go in first place has not been set");
@@ -437,32 +488,38 @@ public class CCLE {
 		}		
 		
 	}
-	
+		
 	/*
 	 * Executes GSEA on the CCLE gct file (resortedCCLEgctMatrix) using the specified gene set file.
 	 * 
 	 * @author Osvaldo Gra&ntilde;a
-	 * @date Jan 16, 2017	 * 
+	 * @date Jan 16, 2017
 	 * 
 	 */
-	private void executeGSEA(){
+	public void executeGSEA(){
 		System.out.println("[executing GSEA]");
+		String command="java -cp .:/home/ograna/SOFTWARE/GSEA/gsea2-2.2.2.jar -Xmx4G xtools.gsea.Gsea ";
+		command+="-res "+this.resortedCCLEgctMatrix_outputFileName+" ";
+		command+="-cls "+this.classesFileName+"#"+this.firstSampleType+"_versus_REST ";
+		command+="-gmx "+this.geneSetFile+" ";
+		command+="-collapse true -mode Max_probe -norm meandiv -nperm 1000 -permute phenotype -rnd_type no_balance -scoring_scheme weighted ";
+		command+="-rpt_label "+GSEAouptutLabel+" ";
+		command+="-metric Signal2Noise -sort real -order descending -chip gseaftp.broadinstitute.org://pub/gsea/annotations/AFFYMETRIX.chip -include_only_symbols true -make_sets true -median false -num 100 -plot_top_x 20 -rnd_seed 123 -save_rnd_lists false -set_max 1000 -set_min 15 -zip_report false ";
+		command+="-out GSEA ";
+		command+="-gui false ";
 		
-//		String command="java -cp .:/home/ograna/SOFTWARE/GSEA/gsea2-2.2.2.jar -Xmx4G xtools.gsea.Gsea"+" -res "+
-//		my $GSEA="java -cp .:/home/ograna/SOFTWARE/GSEA/gsea2-2.2.2.jar -Xmx4G xtools.gsea.Gsea";
-//		$GSEA.=" -res ".$collapsed_OUTPUT_CCLE;
-//		$GSEA.=" -cls ".$CLSfile."#".$firstSample."_versus_REST";
-//		$GSEA.=" -gmx ".$GMX;
-//		$GSEA.=" -collapse false -mode Max_probe -norm meandiv -nperm 1000 -permute phenotype -rnd_type no_balance -scoring_scheme weighted";
-//		$GSEA.=" -rpt_label ".$GSEAouptutLabel;
-//		$GSEA.=" -metric Signal2Noise -sort real -order descending -chip gseaftp.broadinstitute.org://pub/gsea/annotations/AFFYMETRIX.chip -include_only_symbols true -make_sets true -median false -num 100 -plot_top_x 20 -rnd_seed 123 -save_rnd_lists false -set_max 1000 -set_min 5 -zip_report false";
-//		$GSEA.=" -out ./";
-//		$GSEA.=" -gui false";
-//		print $GSEA."\n";
-//		system($GSEA);
-//
-
-		
+		try {
+			Process p=Runtime.getRuntime().exec(command.split(" "));
+			p.waitFor();
+			System.out.println("Process exit value:"+p.exitValue());
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 	

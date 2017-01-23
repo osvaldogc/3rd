@@ -40,12 +40,21 @@ public class ppal {
 			
 			}*/
 			
+			//The following steps are required, following the order below
+			//1.-
 			tabla.setFirstSampleTypeToIncludeInHeatmap("KIDNEY");
-			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/classes.cls");			
+			//2.-
+			tabla.setNameforClassesFile("/home/ograna/eclipse_workspace/classes.cls");
+			//3.-
 			tabla.createClassFile(listOfSamples);
+			//4.-
+			tabla.set_resortedCCLEgctMatrix_outputFileName("resorted.gct");
+			//5.-
 			tabla.createResortedGCTfile(listOfSamples);
+			//6.-
 			tabla.set_gmtORgmxFileWithGenesetToPlot("/home/ograna/Projects/GSEA_pathways_definitions/h.all.v5.2.symbols.gmt");
-			
+			//7.-
+			tabla.executeGSEA();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
